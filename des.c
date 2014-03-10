@@ -357,7 +357,7 @@ error_handler:
     return retv;
 }
 
-#if 0
+#if 1
 int main(void)
 {
     uint64_t key   = 0;
@@ -370,16 +370,19 @@ int main(void)
     char  outf[256];
     char  skip[256];
     char  str [256];
-    FILE *fp = NULL;
+    FILE *fpin  = NULL;
+    FILE *fpout = NULL;
+    long  listoff;
 
-    fp = fopen("sngen.ini", "r");
-    if (!fp) return 0;
+    fpin = fopen("sngen.ini", "r");
+    if (!fpin) return 0;
 
-    fscanf(fp, "%"SCNx64, &key  ); fgets(skip, 256, fp);
-    fscanf(fp, "%"SCNx64, &start); fgets(skip, 256, fp);
-    fscanf(fp, "%"SCNx64, &end  ); fgets(skip, 256, fp);
-    fscanf(fp, "%s"     , &outf ); fgets(skip, 256, fp);
-    fclose(fp);
+    fscanf(fpin, "%"SCNx64, &key  ); fgets(skip, 256, fpin);
+    fscanf(fpin, "%"SCNx64, &start); fgets(skip, 256, fpin);
+    fscanf(fpin, "%"SCNx64, &end  ); fgets(skip, 256, fpin);
+    fscanf(fpin, "%s"     , &outf ); fgets(skip, 256, fpin);
+    listoff = ftell(fpin);
+    fclose(fpin);
 
     printf("key    = %"PRIX64"\n", key  );
     printf("start  = %"PRIX64"\n", start);
@@ -387,30 +390,47 @@ int main(void)
     printf("output = %s\n"       , outf );
 
 
-    fp = fopen(outf, "w+");
-    if (!fp) return 0;
+    fpout = fopen(outf, "w+");
+    if (!fpout) return 0;
 
-    fprintf(fp, "key    = %"PRIX64"\n", key  );
-    fprintf(fp, "start  = %"PRIX64"\n", start);
-    fprintf(fp, "end    = %"PRIX64"\n", end  );
-    fprintf(fp, "output = %s\n"       , outf );
-    fprintf(fp, "\nsn list:\n\n");
+    fprintf(fpout, "key    = %"PRIX64"\n", key  );
+    fprintf(fpout, "start  = %"PRIX64"\n", start);
+    fprintf(fpout, "end    = %"PRIX64"\n", end  );
+    fprintf(fpout, "output = %s\n"       , outf );
+    fprintf(fpout, "\nsn list:\n\n");
 
     printf("generating sn list...\n");
     des_make_subkeys(key, subkeys);
-    for (cur=start; cur<=end; cur++)
-    {
-        data = des_crypt(subkeys, cur, 0);
-        sprintf(str, "%016"PRIX64 "  -  %016"PRIX64, cur, data);
-        fprintf(fp, "%s\n", str);
+
+    if (start == 0 && end == 0) {
+        fpin = fopen("sngen.ini", "r");
+        if (!fpin) return 0;
+        fseek(fpin, listoff, SEEK_SET);
+        while (!feof(fpin)) {
+            if (fscanf(fpin, "%"SCNx64, &cur) == -1) break;
+            else fgets(skip, 256, fpin);
+            data = des_crypt(subkeys, cur, 0);
+            sprintf(str, "%016"PRIX64 "  -  %016"PRIX64, cur, data);
+            fprintf(fpout, "%s\n", str);
+        }
+        fclose(fpin);
     }
+    else {
+        for (cur=start; cur<=end; cur++)
+        {
+            data = des_crypt(subkeys, cur, 0);
+            sprintf(str, "%016"PRIX64 "  -  %016"PRIX64, cur, data);
+            fprintf(fpout, "%s\n", str);
+        }
+    }
+
     printf("done.\n");
-    fclose(fp);
+    fclose(fpout);
     return 0;
 }
 #endif
 
-#if 0
+#if 0 // decrypt.exe
 int main(void)
 {
     uint64_t key  = 0x13B5F982857A1C07LL;
@@ -441,7 +461,7 @@ int main(void)
 }
 #endif
 
-#if 0
+#if 0 // test.exe
 int main(void)
 {
     char *key = "13B5F982857A1C07";
@@ -454,6 +474,7 @@ int main(void)
 }
 #endif
 
+#if 0 // fdes.exe
 #define DEBUG 1
 int main(int argc, char *argv[])
 {
@@ -496,6 +517,6 @@ int main(int argc, char *argv[])
     retv = file_des_crypt(key, argv[3], argv[4], mode);
     printf("%d\n", retv);
 }
-
+#endif
 
 
