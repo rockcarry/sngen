@@ -69,7 +69,7 @@ static int read_text_bytes(uint8_t *buf, int n, FILE *fp)
     while (i < n) {
         int c = fgetc(fp);
         if (c == EOF) break;
-        if (c == '\r' || c == '\n' || c == ' ') continue;
+        if (c < '!' || c > '~') continue;
         buf[i++] = c;
     }
     return i;
