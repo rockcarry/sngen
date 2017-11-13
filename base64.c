@@ -5,7 +5,7 @@
 typedef unsigned char uint8_t;
 typedef unsigned int  uint32_t;
 
-uint8_t base64_to_char(uint8_t v)
+static uint8_t base64_to_char(uint8_t v)
 {
     if (v < 26) {
         return 'A' + (v - 0 );
@@ -20,7 +20,7 @@ uint8_t base64_to_char(uint8_t v)
     }
 }
 
-uint8_t char_to_base64(uint8_t c, int *padding)
+static uint8_t char_to_base64(uint8_t c, int *padding)
 {
     if (c >= 'A' && c <= 'Z') {
         return c - 'A' + 0;
@@ -40,7 +40,7 @@ uint8_t char_to_base64(uint8_t c, int *padding)
     }
 }
 
-void base64_encode_3bytes(uint8_t *dst, uint8_t *src)
+static void base64_encode_3bytes(uint8_t *dst, uint8_t *src)
 {
     uint32_t data = (src[0] << 16) | (src[1] << 8) | (src[2] << 0);
     *dst++ = base64_to_char((data >> 18) & 0x3f);
@@ -49,7 +49,7 @@ void base64_encode_3bytes(uint8_t *dst, uint8_t *src)
     *dst++ = base64_to_char((data >>  0) & 0x3f);
 }
 
-int base64_decode_4bytes(uint8_t *dst, uint8_t *src)
+static int base64_decode_4bytes(uint8_t *dst, uint8_t *src)
 {
     uint32_t data    = 0;
     int      padding = 0;
@@ -63,13 +63,26 @@ int base64_decode_4bytes(uint8_t *dst, uint8_t *src)
     return padding;
 }
 
+static int read_text_bytes(uint8_t *buf, int n, FILE *fp)
+{
+    int i = 0;
+    while (i < n) {
+        int c = fgetc(fp);
+        if (c == EOF) break;
+        if (c == '\r' || c == '\n' || c == ' ') continue;
+        buf[i++] = c;
+    }
+    return i;
+}
+
 int main(int argc, char *argv[])
 {
     FILE *fpsrc;
     FILE *fpdst;
-    int   encode;
-    int   padding;
-    int   ret = -1;
+    int   encode  =  0;
+    int   padding =  0;
+    int   counter =  0;
+    int   ret     = -1;
     uint8_t buf[4];
 
     if (argc < 4) {
@@ -102,10 +115,13 @@ int main(int argc, char *argv[])
             base64_encode_3bytes(buf, buf);
             fwrite(buf , 1, 4 - padding, fpdst);
             fwrite("==", 1, padding    , fpdst);
+            if (++counter % 16 == 0) {
+                fwrite("\r\n", 1, 2, fpdst);
+            }
         }
     } else {
         while (1) {
-            ret = fread(buf, 1, 4, fpsrc);
+            ret = read_text_bytes(buf, 4, fpsrc);
             if (ret <= 0 || ret > 4) break;
             padding = base64_decode_4bytes(buf, buf);
             fwrite(buf, 1, 3 - padding, fpdst);
