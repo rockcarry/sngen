@@ -1,0 +1,56 @@
+
+//+ for datetime convert
+#define SECOND_OF_DAY   86400
+#define IS_LEAP_YEAR(y) ((y)%4 == 0 && (y)%100 != 0 || (y)%400 == 0)
+#define BASE_YEAR       2018 // 1970 2018
+static uint8_t DayOfMon[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+
+void DateTime2UnixTimeStamp(uint32_t *timestamp, RTC_Calendar_t *calendar)
+{
+    uint16_t year, mon, day, hour, min, sec, i;
+    uint32_t nday = 0;
+
+    year = calendar->uwYear ;
+    mon  = calendar->ubMonth;
+    day  = calendar->ubDate ;
+    hour = calendar->ubHour ;
+    min  = calendar->ubMin  ;
+    sec  = calendar->ubSec  ;
+
+    for (i=BASE_YEAR; i<year; i++) {
+        nday += IS_LEAP_YEAR(i) ? 366 : 365;
+    }
+    for (i=1; i<mon; i++) {
+        nday += DayOfMon[i-1] + (i==2 && IS_LEAP_YEAR(year));
+    }
+    nday += (day - 1);
+    *timestamp = nday*SECOND_OF_DAY + (uint32_t)hour*3600 + (uint32_t)min*60 + sec;
+}
+
+void UnixTimeStamp2DateTime(RTC_Calendar_t *calendar, uint32_t timestamp)
+{
+    uint32_t lsec = timestamp, lday;
+    lday = timestamp / SECOND_OF_DAY;
+    lsec = timestamp % SECOND_OF_DAY;
+    uint16_t i, j, iday;
+
+    i = BASE_YEAR;
+    while (lday >= IS_LEAP_YEAR(i) ? 366 : 365) {
+        lday -= IS_LEAP_YEAR(i) ? 366 : 365;
+        i++;
+    }
+
+    for (j=0; j<12; j++) {
+        iday = DayOfMon[j] + (j==1 && IS_LEAP_YEAR(i));
+        if (lday >= iday) lday -= iday;
+        else break;
+    }
+
+    calendar->uwYear = i;
+    calendar->ubMonth= j    + 1;
+    calendar->ubDate = lday + 1;
+    calendar->ubHour = (lsec / 3600) % 24;
+    calendar->ubMin  = (lsec % 3600) / 60;
+    calendar->ubSec  = (lsec % 3600) % 60;
+}
+//- for datetime convert
