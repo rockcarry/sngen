@@ -53,4 +53,35 @@ void UnixTimeStamp2DateTime(RTC_Calendar_t *calendar, uint32_t timestamp)
     calendar->ubMin  = (lsec % 3600) / 60;
     calendar->ubSec  = (lsec % 3600) % 60;
 }
+
+static int8_t is_dst_day(uint16_t year, uint32_t timestamp)
+{
+    static uint16_t check_year  = 0;
+    static uint32_t check_start = 0;
+    static uint32_t check_end   = 0;
+
+    if (check_year != year) {
+        RTC_Calendar_t calendar = { year, 1, 1, 2, 0, 0};
+        int8_t         dayofweek;
+        uint32_t       ts;
+
+        calendar.ubMonth = 3;
+        calendar.ubDate  = 1;
+        DateTime2UnixTimeStamp(&ts, &calendar);
+        dayofweek = (ts / (60 * 60 * 24)) % 7;
+        calendar.ubDate  = 6 - dayofweek + 1 + 7;
+        DateTime2UnixTimeStamp(&check_start, &calendar);
+
+        calendar.ubMonth = 11;
+        calendar.ubDate  = 1;
+        DateTime2UnixTimeStamp(&ts, &calendar);
+        dayofweek = (ts / (60 * 60 * 24)) % 7;
+        calendar.ubDate  = 6 - dayofweek + 1 + 0;
+        DateTime2UnixTimeStamp(&check_end  , &calendar);
+
+        check_year = year;
+    }
+
+    return timestamp >= check_start && timestamp < check_end;
+}
 //- for datetime convert
