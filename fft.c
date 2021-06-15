@@ -1,15 +1,15 @@
-// °üº¬Í·ÎÄ¼ş
+// åŒ…å«å¤´æ–‡ä»¶
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
 #include "fft.h"
 
-// ÄÚ²¿³£Á¿¶¨Òå
+// å†…éƒ¨å¸¸é‡å®šä¹‰
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
-// ÄÚ²¿ÀàĞÍ¶¨Òå
+// å†…éƒ¨ç±»å‹å®šä¹‰
 typedef struct {
     int    N;
     float *W;
@@ -17,7 +17,7 @@ typedef struct {
     int   *order;
 } FFT_CONTEXT;
 
-// ÄÚ²¿º¯ÊıÊµÏÖ
+// å†…éƒ¨å‡½æ•°å®ç°
 // r = c1 + c2
 static void complex_add(float *r, float *c1, float *c2)
 {
@@ -74,7 +74,7 @@ static void fft_execute_internal(FFT_CONTEXT *ctxt, float *data, int n, int w)
     }
 }
 
-// º¯ÊıÊµÏÖ
+// å‡½æ•°å®ç°
 void *fft_init(int n)
 {
     int shift;
@@ -97,7 +97,7 @@ void *fft_init(int n)
         ctxt->W[i * 2 + 1] =(float)-sin(2 * M_PI * i / ctxt->N);
     }
 
-    shift = (int)(32 - log((float)n)/log((float)2));
+    shift = 32 - (int)(log((float)n)/log((float)2));
     for (i=0; i<ctxt->N; i++) {
         ctxt->order[i] = (unsigned)reverse_bits(i) >> shift;
     }
