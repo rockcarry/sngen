@@ -1,12 +1,11 @@
-#ifndef __FFPLAYER_FFT_H__
-#define __FFPLAYER_FFT_H__
+#ifndef __FFT_H__
+#define __FFT_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* º¯ÊýÉùÃ÷ */
-void *fft_init   (int len);
+void *fft_init   (int len, int ifft);
 void  fft_free   (void *c);
 void  fft_execute(void *c, float *in, float *out);
 

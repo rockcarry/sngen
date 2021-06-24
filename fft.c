@@ -1,5 +1,6 @@
 // 包含头文件
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <math.h>
 #include "fft.h"
@@ -15,6 +16,7 @@ typedef struct {
     float *W;
     float *T;
     int   *order;
+    int    ifft;
 } FFT_CONTEXT;
 
 // 内部函数实现
@@ -75,7 +77,7 @@ static void fft_execute_internal(FFT_CONTEXT *ctxt, float *data, int n, int w)
 }
 
 // 函数实现
-void *fft_init(int n)
+void *fft_init(int n, int ifft)
 {
     int shift;
     int i;
@@ -84,6 +86,7 @@ void *fft_init(int n)
     if (!ctxt) return NULL;
 
     ctxt->N     = n;
+    ctxt->ifft  = ifft;
     ctxt->W     = (float*)calloc(n, sizeof(float) * 1);
     ctxt->T     = (float*)calloc(n, sizeof(float) * 2);
     ctxt->order = (int  *)calloc(n, sizeof(int  ) * 1);
@@ -93,8 +96,8 @@ void *fft_init(int n)
     }
 
     for (i=0; i<ctxt->N/2; i++) {
-        ctxt->W[i * 2 + 0] =(float) cos(2 * M_PI * i / ctxt->N);
-        ctxt->W[i * 2 + 1] =(float)-sin(2 * M_PI * i / ctxt->N);
+        ctxt->W[i * 2 + 0] =(float) cos((ctxt->ifft ? -2 : 2) * M_PI * i / ctxt->N);
+        ctxt->W[i * 2 + 1] =(float)-sin((ctxt->ifft ? -2 : 2) * M_PI * i / ctxt->N);
     }
 
     shift = 32 - (int)ceil(log(n)/log(2));
@@ -121,8 +124,8 @@ void fft_execute(void *c, float *in, float *out)
     memcpy(ctxt->T, in, sizeof(float) * 2 * ctxt->N);
     fft_execute_internal(ctxt, ctxt->T, ctxt->N, 1);
     for (i=0; i<ctxt->N; i++) {
-        out[ctxt->order[i] * 2 + 0] = ctxt->T[i * 2 + 0];
-        out[ctxt->order[i] * 2 + 1] = ctxt->T[i * 2 + 1];
+        out[ctxt->order[i] * 2 + 0] = ctxt->T[i * 2 + 0] / (ctxt->ifft ? ctxt->N : 1);
+        out[ctxt->order[i] * 2 + 1] = ctxt->T[i * 2 + 1] / (ctxt->ifft ? ctxt->N : 1);
     }
 }
 
@@ -163,7 +166,7 @@ int main(void)
     }
     printf("\n");
 
-    fft = fft_init(16);
+    fft = fft_init(16, 0);
     fft_execute(fft, in, out);
     fft_free(fft);
 
